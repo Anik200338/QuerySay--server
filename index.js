@@ -37,9 +37,17 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     const AddQueryCollection = client.db('AddQueryDB').collection('AddQuery');
+    const AddRecommendedCollection = client
+      .db('AddQueryDB')
+      .collection('AddRecommended');
     // Send a ping to confirm a successful connection
     app.get('/AddQuery', async (req, res) => {
-      const cursor = AddQueryCollection.find();
+      const search = req.query.search;
+
+      let query = {
+        ProductName: { $regex: search, $options: 'i' },
+      };
+      const cursor = AddQueryCollection.find(query);
       const result = await cursor.sort({ _id: -1 }).toArray();
       res.send(result);
     });
@@ -95,6 +103,68 @@ async function run() {
       console.log(result);
       res.send(result);
     });
+
+    // recommended
+
+    app.post('/recommended', async (req, res) => {
+      const newRecommended = req.body;
+      console.log(newRecommended);
+      const result = await AddRecommendedCollection.insertOne(newRecommended);
+      const updateDoc = {
+        $inc: {
+          recommendationCount: 1,
+        },
+      };
+      const query = { _id: new ObjectId(newRecommended.id) };
+      const updaterecommendationCount = await AddQueryCollection.updateOne(
+        query,
+        updateDoc
+      );
+      console.log(updaterecommendationCount);
+      res.send(result);
+    });
+
+    app.get('/subcategory/:id', async (req, res) => {
+      const result = await AddRecommendedCollection.find({
+        id: req.params.id,
+      }).toArray();
+      res.send(result);
+    });
+
+    app.get('/myRecommended/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'User.email': email };
+      const result = await AddRecommendedCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get('/Forme/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await AddRecommendedCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.delete('/myDelete', async (req, res) => {
+      const id = req.query.id;
+      const id2 = req.query.id2;
+      // return console.log(id, id2);
+      const result = await AddRecommendedCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      const decreasesDoc = {
+        $inc: {
+          recommendationCount: -1,
+        },
+      };
+      const deleteQuery = { _id: new ObjectId(id2) };
+      console.log(deleteQuery);
+      const decreasesRecommendationCount = await AddQueryCollection.updateOne(
+        deleteQuery,
+        decreasesDoc
+      );
+      res.send(result);
+    });
+
     await client.db('admin').command({ ping: 1 });
     console.log(
       'Pinged your deployment. You successfully connected to MongoDB!'
