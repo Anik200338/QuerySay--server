@@ -40,6 +40,7 @@ async function run() {
     const AddRecommendedCollection = client
       .db('AddQueryDB')
       .collection('AddRecommended');
+
     // Send a ping to confirm a successful connection
     app.get('/AddQuery', async (req, res) => {
       const search = req.query.search;
