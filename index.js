@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 const cors = require('cors');
@@ -32,7 +34,11 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-
+const cookeOption = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+  secure: process.env.NODE_ENV === 'production' ? true : false,
+};
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -40,6 +46,22 @@ async function run() {
     const AddRecommendedCollection = client
       .db('AddQueryDB')
       .collection('AddRecommended');
+    // jwt generate
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      console.log('user for token', user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '7d',
+      });
+
+      res.cookie('token', token, cookeOption).send({ success: true });
+    });
+
+    app.get('/logout', (req, res) => {
+      res
+        .clearCookie('token', { ...cookeOption, maxAge: 0 })
+        .send({ success: true });
+    });
 
     // Send a ping to confirm a successful connection
     app.get('/AddQuery', async (req, res) => {
