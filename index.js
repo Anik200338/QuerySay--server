@@ -182,7 +182,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/subcategory/:id', verifyToken, async (req, res) => {
+    app.get('/subcategory/:id', async (req, res) => {
       const result = await AddRecommendedCollection.find({
         id: req.params.id,
       }).toArray();
@@ -195,7 +195,7 @@ async function run() {
       const result = await AddRecommendedCollection.find(query).toArray();
       res.send(result);
     });
-    app.get('/Forme/:email', async (req, res) => {
+    app.get('/Forme/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const result = await AddRecommendedCollection.find(query).toArray();
@@ -223,7 +223,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db('admin').command({ ping: 1 });
+    // await client.db('admin').command({ ping: 1 });
     console.log(
       'Pinged your deployment. You successfully connected to MongoDB!'
     );
