@@ -182,14 +182,14 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/subcategory/:id', async (req, res) => {
+    app.get('/subcategory/:id', verifyToken, async (req, res) => {
       const result = await AddRecommendedCollection.find({
         id: req.params.id,
       }).toArray();
       res.send(result);
     });
 
-    app.get('/myRecommended/:email', async (req, res) => {
+    app.get('/myRecommended/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { 'User.email': email };
       const result = await AddRecommendedCollection.find(query).toArray();
