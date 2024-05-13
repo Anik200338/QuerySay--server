@@ -21,8 +21,33 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser());
 // query;
 // OIZbTqorbaVZiwsF;
+
+// middlewares
+const logger = (req, res, next) => {
+  console.log('log: info', req.method, req.url);
+  next();
+};
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access' });
+  }
+  if (token) {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        console.log(err);
+        return res.status(401).send({ message: 'unauthorized access' });
+      }
+      console.log(decoded);
+      req.user = decoded;
+      next();
+    });
+  }
+  console.log(token);
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.scvnlgi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -47,7 +72,7 @@ async function run() {
       .db('AddQueryDB')
       .collection('AddRecommended');
     // jwt generate
-    app.post('/jwt', async (req, res) => {
+    app.post('/jwt', logger, async (req, res) => {
       const user = req.body;
       console.log('user for token', user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -74,6 +99,11 @@ async function run() {
       const result = await cursor.sort({ _id: -1 }).toArray();
       res.send(result);
     });
+    app.get('/AddRecent', async (req, res) => {
+      const cursor = AddQueryCollection.find();
+      const result = await cursor.sort({ _id: -1 }).toArray();
+      res.send(result);
+    });
 
     app.post('/AddQuery', async (req, res) => {
       const newQuery = req.body;
@@ -83,10 +113,15 @@ async function run() {
     });
 
     // my Query
-    app.get('/Query/:email', async (req, res) => {
-      const result = await AddQueryCollection.find({
-        email: req.params.email,
-      })
+    app.get('/Query/:email', verifyToken, async (req, res) => {
+      const tokenEmail = req.user.email;
+      const email = req.params.email;
+      console.log(tokenEmail, 'from token');
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      const query = { email: req.params.email };
+      const result = await AddQueryCollection.find(query)
         .sort({ _id: -1 })
         .toArray();
       res.send(result);
@@ -117,7 +152,7 @@ async function run() {
         $set: {
           ProductName: req.body.ProductName,
           ProductBrand: req.body.ProductBrand,
-          ProductImage: req.body.description,
+          ProductImage: req.body.ProductImage,
           QueryTItle: req.body.QueryTItle,
           BoycottingReasonDetails: req.body.BoycottingReasonDetails,
         },
