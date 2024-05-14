@@ -12,8 +12,8 @@ app.use(
   cors({
     origin: [
       'http://localhost:5173',
-      'https://assignment-10-7eeb4.web.app',
-      'https://assignment-10-7eeb4.firebaseapp.com',
+      'https://assignment-11-f6ebc.web.app',
+      'https://assignment-11-f6ebc.firebaseapp.com',
     ],
     credentials: true,
     optionsSuccessStatus: 200,
@@ -61,8 +61,8 @@ const client = new MongoClient(uri, {
 });
 const cookeOption = {
   httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-  secure: process.env.NODE_ENV === 'production' ? true : false,
 };
 async function run() {
   try {
@@ -82,9 +82,11 @@ async function run() {
       res.cookie('token', token, cookeOption).send({ success: true });
     });
 
-    app.get('/logout', (req, res) => {
+    app.post('/logout', (req, res) => {
+      const user = req.body;
+      console.log('logging out', user);
       res
-        .clearCookie('token', { ...cookeOption, maxAge: 0 })
+        .clearCookie('token', { maxAge: 0, sameSite: 'none', secure: true })
         .send({ success: true });
     });
 
@@ -222,14 +224,11 @@ async function run() {
       );
       res.send(result);
     });
-
-    // await client.db('admin').command({ ping: 1 });
     console.log(
       'Pinged your deployment. You successfully connected to MongoDB!'
     );
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
   }
 }
 run().catch(console.dir);
