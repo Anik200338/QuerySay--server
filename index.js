@@ -32,6 +32,7 @@ const logger = (req, res, next) => {
 };
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
+  console.log(token);
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' });
   }
@@ -46,7 +47,6 @@ const verifyToken = (req, res, next) => {
       next();
     });
   }
-  console.log(token);
 };
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.scvnlgi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
